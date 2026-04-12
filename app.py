@@ -1,3 +1,9 @@
+import os
+
+# If model not found → train it
+if not os.path.exists("model/model.pkl"):
+    import train
+
 import streamlit as st
 import pickle
 import numpy as np
