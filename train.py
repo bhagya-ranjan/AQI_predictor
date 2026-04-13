@@ -44,7 +44,11 @@ def train_model(df):
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    model = RandomForestRegressor(n_estimators=50, max_depth=15)
+    model = RandomForestRegressor(
+    n_estimators=8,
+    max_depth=6,
+    random_state=42
+)
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
@@ -72,7 +76,6 @@ def save_artifacts(model, scaler, columns):
 
     print("Model, scaler, and columns saved successfully!")
 
-
 def main():
     print("Loading data...")
     df = load_data()
@@ -87,6 +90,8 @@ def main():
     save_artifacts(model, scaler, columns)
 
     print("✅ Training complete!")
+    size = os.path.getsize("model/model.pkl") / (1024*1024)
+    print(f"Model size: {size:.2f} MB")
 
 
 if __name__ == "__main__":
