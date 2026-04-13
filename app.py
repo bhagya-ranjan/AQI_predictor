@@ -1,13 +1,14 @@
 import os
-
-# If model not found → train it
-if not os.path.exists("model/model.pkl"):
-    import train
-    st.warning("Training model... please wait ⏳")
 import streamlit as st
 import pickle
 import numpy as np
 import pandas as pd
+# If model not found → train it
+if not os.path.exists("model/model.pkl"):
+    import train
+    train.main()
+    st.warning("Training model... please wait ⏳")
+
 
 # Page config
 st.set_page_config(page_title="AQI Predictor", page_icon="🌫️", layout="centered")
@@ -95,7 +96,9 @@ if st.button("Predict AQI"):
     if city_col in input_dict:
         input_dict[city_col] = 1
 
-    input_df = pd.DataFrame([input_dict])
+    input_df = pd.DataFrame([input_dict])[columns]
+    st.write("INPUT DATA:")
+    st.write(input_df)
     input_scaled = scaler.transform(input_df)
 
     prediction = model.predict(input_scaled)[0]

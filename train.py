@@ -44,12 +44,7 @@ def train_model(df):
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    model = RandomForestRegressor(
-        n_estimators=20,
-        max_depth=10,
-        random_state=42,
-        n_jobs=-1
-    )
+    model = RandomForestRegressor(n_estimators=50, max_depth=15)
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
