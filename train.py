@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
-
+import sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
@@ -66,16 +66,15 @@ def save_artifacts(model, scaler, columns):
     os.makedirs("model", exist_ok=True)
 
     with open("model/model.pkl", "wb") as f:
-        pickle.dump(model, f)
+        pickle.dump(model, f, protocol=4)
 
     with open("model/scaler.pkl", "wb") as f:
-        pickle.dump(scaler, f)
+        pickle.dump(scaler, f, protocol=4)
 
     with open("model/columns.pkl", "wb") as f:
-        pickle.dump(columns, f)
+        pickle.dump(columns, f, protocol=4)
 
     print("Model, scaler, and columns saved successfully!")
-
 def main():
     print("Loading data...")
     df = load_data()
