@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import pandas as pd
 
-
+port = int(os.environ.get("PORT", 8501))
 # Page config
 st.set_page_config(page_title="AQI Predictor", page_icon="🌫️", layout="centered")
 
