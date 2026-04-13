@@ -1,4 +1,5 @@
 import os
+import sys
 import streamlit as st
 import pickle
 import numpy as np
@@ -7,25 +8,44 @@ import pandas as pd
 # Page config
 st.set_page_config(page_title="AQI Predictor", page_icon="🌫️", layout="centered")
 
-# Load model
-model = pickle.load(open("model/model.pkl", "rb"))
-scaler = pickle.load(open("model/scaler.pkl", "rb"))
-columns = pickle.load(open("model/columns.pkl", "rb"))
+# Load model with error handling
+@st.cache_resource
+def load_models():
+    try:
+        model = pickle.load(open("model/model.pkl", "rb"))
+        scaler = pickle.load(open("model/scaler.pkl", "rb"))
+        columns = pickle.load(open("model/columns.pkl", "rb"))
+        return model, scaler, columns
+    except FileNotFoundError as e:
+        st.error(f"❌ Model file not found: {e}")
+        st.write("📁 Current directory:", os.getcwd())
+        st.write("📂 Files found:", os.listdir("."))
+        if os.path.exists("model"):
+            st.write("📂 Model folder contents:", os.listdir("model"))
+        else:
+            st.write("❌ 'model' folder does not exist!")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Error loading model: {e}")
+        st.write("🐍 Python version:", sys.version)
+        st.stop()
+
+model, scaler, columns = load_models()
 
 # AQI Category + Color
 def get_aqi_info(aqi):
     if aqi <= 50:
-        return "Good ! ", "#00E400"
+        return "Good", "#00E400"
     elif aqi <= 100:
-        return "Satisfactory ", "#9CFF00"
+        return "Satisfactory", "#9CFF00"
     elif aqi <= 200:
-        return "Moderate ", "#FFE600"
+        return "Moderate", "#FFE600"
     elif aqi <= 300:
-        return "Poor ", "#FF7E00"
+        return "Poor", "#FF7E00"
     elif aqi <= 400:
-        return "Very Poor ", "#FF0000"
+        return "Very Poor", "#FF0000"
     else:
-        return "Severe ", "#8F3F97"
+        return "Severe", "#8F3F97"
 
 # Title
 st.markdown(
@@ -68,60 +88,57 @@ selected_city = st.selectbox("Select City", cities)
 
 # Predict button
 if st.button("Predict AQI"):
+    try:
+        input_dict = dict.fromkeys(columns, 0)
 
-    input_dict = dict.fromkeys(columns, 0)
+        input_dict.update({
+            'PM2.5': pm25,
+            'PM10': pm10,
+            'NO': no,
+            'NO2': no2,
+            'NOx': nox,
+            'NH3': nh3,
+            'CO': co,
+            'SO2': so2,
+            'O3': o3,
+            'year': year,
+            'month': month,
+            'day': day
+        })
 
-    input_dict.update({
-        'PM2.5': pm25,
-        'PM10': pm10,
-        'NO': no,
-        'NO2': no2,
-        'NOx': nox,
-        'NH3': nh3,
-        'CO': co,
-        'SO2': so2,
-        'O3': o3,
-        'year': year,
-        'month': month,
-        'day': day
-    })
+        city_col = f"City_{selected_city}"
+        if city_col in input_dict:
+            input_dict[city_col] = 1
 
-    city_col = f"City_{selected_city}"
-    if city_col in input_dict:
-        input_dict[city_col] = 1
+        input_df = pd.DataFrame([input_dict])[columns]
+        input_scaled = scaler.transform(input_df)
+        prediction = model.predict(input_scaled)[0]
+        category, color = get_aqi_info(prediction)
 
-    input_df = pd.DataFrame([input_dict])[columns]
-    st.write("INPUT DATA:")
-    st.write(input_df)
-    input_scaled = scaler.transform(input_df)
+        # Output
+        st.markdown("## Result")
+        st.markdown(
+            f"""
+            <div style="background-color:#111;padding:20px;border-radius:15px;text-align:center;">
+                <h2 style="color:{color};">AQI: {prediction:.2f}</h2>
+                <h3 style="color:{color};">{category}</h3>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    prediction = model.predict(input_scaled)[0]
-    category, color = get_aqi_info(prediction)
+        st.markdown("### Health Advice")
+        if prediction <= 50:
+            st.success("Air quality is good. Enjoy outdoor activities!")
+        elif prediction <= 100:
+            st.info("Air quality is acceptable.")
+        elif prediction <= 200:
+            st.warning("Sensitive groups should reduce outdoor activity.")
+        else:
+            st.error("Avoid outdoor activities. Health risk is high!")
 
-    # Output
-    st.markdown("## Result")
-
-    st.markdown(
-        f"""
-        <div style="background-color:#111;padding:20px;border-radius:15px;text-align:center;">
-            <h2 style="color:{color};">AQI: {prediction:.2f}</h2>
-            <h3 style="color:{color};">{category}</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Description
-    st.markdown("### Health Advice")
-
-    if prediction <= 50:
-        st.success("Air quality is good. Enjoy outdoor activities!")
-    elif prediction <= 100:
-        st.info("Air quality is acceptable.")
-    elif prediction <= 200:
-        st.warning("Sensitive groups should reduce outdoor activity.")
-    else:
-        st.error("Avoid outdoor activities. Health risk is high!")
+    except Exception as e:
+        st.error(f"❌ Prediction error: {e}")
 
 # Footer
 st.markdown("---")
